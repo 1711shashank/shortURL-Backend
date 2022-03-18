@@ -1,14 +1,16 @@
 const { userDataBase ,urlModel} = require('../models/mongoDB')
 const userRouter = require('./userRouter')
 const jwt = require('jsonwebtoken')
-const { is } = require('express/lib/request')
+const { is } = require('express/lib/request');
+const  generator  = require('../services/generator');
 const JWT_KEY = 'skf453wdanj3rfj93nos'
 
 module.exports.sortURL = async function sortURL (req, res) {
   try {
     
    
-    let { sortUrl, longUrl } = req.body
+    const { longUrl } = req.body;
+    const sortUrl = generator.short();
     console.log(req.user)
 
     if (req.user) {

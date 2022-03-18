@@ -1,4 +1,4 @@
-const userDataBase = require('../models/mongoDB');
+const { userDataBase } = require('../models/mongoDB');
 const nodemailer = require("nodemailer");
 const bcrypt = require('bcrypt');
 var jwt = require('jsonwebtoken');
@@ -45,7 +45,8 @@ module.exports.loginUser = async function loginUser(req, res) {
         if (dataObj.email && dataObj.password) {
             let user = await userDataBase.findOne({ email: dataObj.email });
             if (user) {
-                let isVaildPassword = await bcrypt.compare(dataObj.password, user.password);
+                let isVaildPassword = user.password === dataObj.password;
+                console.log(isVaildPassword);
                 if (isVaildPassword) {
                     let uid = user['_id'];
                     let jwtSign = jwt.sign({ payload: uid }, JWT_KEY);

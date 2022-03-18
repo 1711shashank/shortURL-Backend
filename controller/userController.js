@@ -1,148 +1,159 @@
-const userDataBase = require('../models/mongoDB');
-const userRouter = require('./userRouter');
+const { userDataBase ,urlModel} = require('../models/mongoDB')
+const userRouter = require('./userRouter')
+const jwt = require('jsonwebtoken')
+const { is } = require('express/lib/request')
+const JWT_KEY = 'skf453wdanj3rfj93nos'
 
-module.exports.sortURL = async function sortURL(req, res) {
-    try {
-        let link = req.body;
-        console.log(link);
+module.exports.sortURL = async function sortURL (req, res) {
+  try {
+    
+   
+    let { sortUrl, longUrl } = req.body
+    console.log(req.user)
 
-        // tempObj = {
-        //     name:"123",
-        //     email:"123@gmail.com",
-        //     password:"123",
-        //     urlData : []
-        // }
-        // await userDataBase.create(tempObj);
+    if (req.user) {
+      const isUrlAlreadyShorted = await userDataBase.findOne({
+        _id: req.user,
+        'urlData.longUrl': longUrl
+      })
+      console.log('UrlAlreadyShorted', isUrlAlreadyShorted)
 
-
-        let user = await userDataBase.findOne({ _id: "623407fac9a2f40bc15c9a23" });
-
-        if (user) {
-            urlData = user.urlData;
-            urlStats = {
-                longUrl: link.url,
-                sortUrl: link.url,
-                urlCreatedCount: "1",
-                urlUsedCount: "1"
-            }
-
-            urlData.push(urlStats);
-            // await user.save();
-        }
+      if (isUrlAlreadyShorted) {
+        const sortedUrl = isUrlAlreadyShorted.urlData[0].sortUrl;
+        var { urlUsedCount, urlCreatedCount } = isUrlAlreadyShorted.urlData[0];
+        urlCreatedCount = urlCreatedCount + 1;
+        const updateCreatedCount = await userDataBase.updateOne({ _id: req.user, "urlData.longUrl": longUrl }, {
+          "$set": { "urlData.$.urlCreatedCount": urlCreatedCount }
+        })
+        console.log("urlCreatedCount ",updateCreatedCount)
 
         res.status(200).json({
-            message: "URL",
-            data: user,
-            statusCode: 200
-        })
+          message: 'URL',
+          data: { sortedUrl, urlCreatedCount, urlUsedCount },
+          statusCode: 200
+        });
+        return;
+      } else {
 
-    } catch (err) {
-        res.status(500).json({
-            message: err.message,
-            statusCode: 500
-        })
-    }
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-module.exports.protectRoute = function protectRoute(req, res, next) {
-    // checking wether user is logged In or not using cookies (JWT encrypted cookies)
-    try {
-
-        // if isVerified token is Invalide then it will give an error and to the catch block 
-        // and if it is true then isVerified will contain some payload value and pass the is statement 
-        // we can also skip the if() conduction and directly write the statement inside it
-
-        // req.cookies.isLoggedIn this hashValue contain payload (_id), so while verifying [_id] is not required
-        let isVerified = jwt.verify(req.cookies.isLoggedIn, JWT_KEY);
-        if (isVerified) {
-            next();
+        const urlStats = {
+          longUrl,
+          sortUrl,
+          urlCreatedCount: 1,
+          urlUsedCount: 1
         }
-    }
-    catch {
-        res.status(511).json({
-            message: 'Please Login',
-            statusCode: 511
+
+        const result = await userDataBase.updateOne(
+          { _id: req.user },
+          {
+            $push: { urlData: urlStats }
+          },
+          { upsert: true }
+        )
+        console.log('result', result)
+
+        res.status(200).json({
+          message: 'URL',
+          data: sortUrl,
+          statusCode: 200
         })
+      }
+    } else {
+      const urlStats = {
+        longUrl,
+        sortUrl,
+        urlCreatedCount: 1,
+        urlUsedCount: 1
+      }
+      const urlobj = new urlModel({urlData: urlStats });
+      const result = await urlobj.save();
+      console.log("result", result);
+      
+      res.send(result);
     }
-}
-
-module.exports.logoutUser = function logoutUser(req, res) {
-
-    res.cookie('isLoggedIn', 'false', { maxAge: 1 });
-    res.status(200).json({
-        message: "User LogOut Successfully",
+  } catch (err) {
+    console.log('err in userController', err)
+    res.status(500).json({
+      message: 'Internal Server Error',
+      statusCode: 500
     })
+  }
 }
 
+module.exports.protectRoute = function protectRoute (req, res, next) {
+  // checking wether user is logged In or not using cookies (JWT encrypted cookies)
+  try {
+    // if isVerified token is Invalide then it will give an error and to the catch block
+    // and if it is true then isVerified will contain some payload value and pass the is statement
+    // we can also skip the if() conduction and directly write the statement inside it
 
+    // req.cookies.isLoggedIn this hashValue contain payload (_id), so while verifying [_id] is not required
+    if (!req.cookies.isLoggedIn) {
+      next();
+    } else {
+      
+      let isVerified = jwt.verify(req.cookies.isLoggedIn, JWT_KEY)
+      if (isVerified) {
+        req.user = isVerified.payload
+      }
+      next()
+    }
+  } catch (err) {
+    console.log('error', err)
+    res.status(511).json({
+      message: 'Please Login',
+      statusCode: 511
+    })
+  }
+}
 
-
-
-
+module.exports.logoutUser = function logoutUser (req, res) {
+  res.cookie('isLoggedIn', 'false', { maxAge: 1 })
+  res.status(200).json({
+    message: 'User LogOut Successfully'
+  })
+}
 
 // stats
-module.exports.getUserData = async function getUserData(req, res) {
+module.exports.getUserData = async function getUserData (req, res) {
+  let dataObj = jwt.verify(req.cookies.isLoggedIn, JWT_KEY)
 
-    let dataObj = jwt.verify(req.cookies.isLoggedIn, JWT_KEY);
+  let userData = await userDataBase.findOne({ _id: dataObj.payload })
 
-    let userData = await userDataBase.findOne({ _id: dataObj.payload });
-
-    res.status(200).json({
-        message: "In the dashborad",
-        res: userData,
-        statusCode: 200
-    })
+  res.status(200).json({
+    message: 'In the dashborad',
+    res: userData,
+    statusCode: 200
+  })
 }
 
+module.exports.updateProfile = async function updateProfile (req, res) {
+  try {
+    let user_ID = jwt.verify(req.cookies.isLoggedIn, JWT_KEY).payload
+    let userData = await userDataBase.findById(user_ID)
 
+    let dataToBeUpdated = req.body
 
-module.exports.updateProfile = async function updateProfile(req, res) {
-
-    try {
-        let user_ID = jwt.verify(req.cookies.isLoggedIn, JWT_KEY).payload;
-        let userData = await userDataBase.findById(user_ID);
-
-        let dataToBeUpdated = req.body;
-
-        const keys = [];
-        for (let key in dataToBeUpdated) {
-            keys.push(key);
-        }
-
-        for (let i = 0; i < keys.length; i++) {
-            userData[keys[i]] = dataToBeUpdated[keys[i]];
-        }
-
-        await userData.save();         // update the data to mongoDB
-
-        console.log("Data Updated successfully");
-        res.status(200).json({
-            message: "Data Updated successfully",
-            data: userData,
-            statusCode: 200
-        })
-
-    } catch (err) {
-        res.status(500).json({
-            message: err.message,
-            statusCode: 500
-        })
+    const keys = []
+    for (let key in dataToBeUpdated) {
+      keys.push(key)
     }
-}
 
+    for (let i = 0; i < keys.length; i++) {
+      userData[keys[i]] = dataToBeUpdated[keys[i]]
+    }
+
+    await userData.save() // update the data to mongoDB
+
+    console.log('Data Updated successfully')
+    res.status(200).json({
+      message: 'Data Updated successfully',
+      data: userData,
+      statusCode: 200
+    })
+  } catch (err) {
+    res.status(500).json({
+      message: err.message,
+      statusCode: 500
+    })
+  }
+}

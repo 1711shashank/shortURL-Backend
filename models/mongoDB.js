@@ -13,13 +13,13 @@ mongoose.connect(db_link)
 
 
 // database stracture
-const userSchema = mongoose.Schema([{
-    name:{
+const userSchema = mongoose.Schema({
+    name: {
         type: String,
     },
     email: {
         type: String,
-        unique:true,
+        unique: true,
         required: true,
     },
     password: {
@@ -27,12 +27,25 @@ const userSchema = mongoose.Schema([{
         required: true,
     },
     urlData: [{
-        longUrl:{},
-        sortUrl:{},
-        urlCreatedCount:{},
-        urlUsedCount:{}
+        longUrl: String,
+        sortUrl: String,
+        urlCreatedCount: Number,
+        urlUsedCount: Number,
     }]
-}])
+});
 
+const urlSchema = mongoose.Schema ({
+    urlData: [
+  {
+    longUrl: String,
+    sortUrl: String,
+    urlCreatedCount: Number,
+    urlUsedCount: Number
+  }
+    ]
+
+})
+
+const urlModel = mongoose.model("urlSchema", urlSchema);
 const userDataBase = mongoose.model("userModal", userSchema);
-module.exports = userDataBase;
+module.exports = { userDataBase, urlModel };

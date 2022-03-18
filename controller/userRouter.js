@@ -1,12 +1,12 @@
 const express = require("express");
 const userRouter = express.Router();
 
-const { sortURL, logoutUser, getUserData, updateProfile} = require('./userController');
+const { sortURL, logoutUser, getUserData, updateProfile,protectRoute} = require('./userController');
 
 
 userRouter
     .route('/sortURL')
-    .post( sortURL );
+    .post(protectRoute, sortURL );
 
 userRouter
     .route('/dashboard')

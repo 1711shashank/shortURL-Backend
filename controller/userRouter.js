@@ -1,7 +1,7 @@
 const express = require("express");
 const userRouter = express.Router();
 
-const { sortURL, logoutUser, getUserData, updateProfile,protectRoute} = require('./userController');
+const { sortURL, logoutUser, getUserData, updateProfile,protectRoute, redirectUser} = require('./userController');
 
 
 userRouter
@@ -19,5 +19,8 @@ userRouter
 userRouter
     .route('/logout')
     .get(logoutUser);
+
+userRouter.route('/:shortId')
+            .get(protectRoute, redirectUser)
 
 module.exports = userRouter;

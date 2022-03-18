@@ -7,7 +7,10 @@ const JWT_KEY = 'skf453wdanj3rfj93nos'
 
 module.exports.sortURL = async function sortURL (req, res) {
   try {
-    const { longUrl } = req.body
+    
+    var { longUrl } = req.body;
+    longUrl = generator.filterUrl(longUrl);
+
     const sortUrl = generator.short()
     console.log(req.user)
 
@@ -15,7 +18,7 @@ module.exports.sortURL = async function sortURL (req, res) {
       const isUrlAlreadyShorted = await userDataBase.findOne({
         _id: req.user,
         'urlData.longUrl': longUrl
-      })
+      }, {"urlData.$": 1})
       console.log('UrlAlreadyShorted', isUrlAlreadyShorted)
 
       if (isUrlAlreadyShorted) {

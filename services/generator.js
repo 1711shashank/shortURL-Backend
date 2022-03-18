@@ -9,3 +9,17 @@ exports.short = () => {
     return result;
 }
 
+exports.filterUrl = (url) => {
+    var getDomain = url.split(':');
+    if (getDomain[0] === 'http' || getDomain[0] === 'https') {
+        return url;
+    }
+    else {
+        var prefix = 'http://'
+       var result =  prefix.concat(url);
+        console.log("prefix", result);
+            return result;
+
+    }
+
+}

@@ -1,7 +1,6 @@
 const { userDataBase, urlModel } = require('../models/mongoDB')
 const userRouter = require('./userRouter')
 const jwt = require('jsonwebtoken')
-const { is } = require('express/lib/request')
 const generator = require('../services/generator')
 const JWT_KEY = 'skf453wdanj3rfj93nos'
 
@@ -84,6 +83,90 @@ module.exports.sortURL = async function sortURL (req, res) {
   }
 }
 
+exports.redirectUser = async (req, res) => {
+    try {
+      const sortUrl = req.params.shortId
+      console.log('short url', sortUrl)
+  
+      if (req.user) {
+        const result = await userDataBase.findOne(
+          {
+            _id: req.user,
+            'urlData.sortUrl': sortUrl
+          },
+          { "urlData.$": 1 }
+        )
+  
+        console.log('result url user', result)
+        if (result) {
+          const longUrl = result.urlData[0].longUrl
+          console.log('long URL: ' + JSON.stringify(longUrl))
+          var { urlUsedCount } = result.urlData[0]
+          urlUsedCount++
+  
+          const updateClicks = await userDataBase.updateOne(
+            {
+              _id: req.user,
+              'urlData.sortUrl': sortUrl
+            },
+            { $set: { 'urlData.$.urlUsedCount': urlUsedCount } }
+          )
+  
+          res.redirect(longUrl)
+        } else {
+          res
+            .status(404)
+            .json({ message: 'Something Went Wrong', statusCode: 404 })
+          return
+        }
+      } else {
+        const result = await urlModel.findOne(
+          { 'urlData.sortUrl': sortUrl },
+          { 'urlData.$': 1 }
+        )
+        console.log('short Url result', result)
+        if (result) {
+          var { urlUsedCount } = result.urlData[0];
+          urlUsedCount++
+          console.log("urlUsedCount", urlUsedCount);
+  
+          const updateClicks = await urlModel.updateOne(
+            {
+              'urlData.sortUrl': sortUrl
+            },
+            { $set: { 'urlData.$.urlUsedCount': urlUsedCount } }
+          );
+          console.log("updateClicks", updateClicks);
+  
+          res
+            .writeHead(301, {
+              Location: `${result.urlData[0].longUrl}`
+            })
+            .end()
+        } else {
+          res.json({ statusCode: 404, message: 'Url not found' })
+        }
+      }
+    } catch (err) {
+      console.log('error in redirect', err)
+      res.status(500).json({ message: 'Internal Server Error' })
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 module.exports.protectRoute = function protectRoute (req, res, next) {
   // checking wether user is logged In or not using cookies (JWT encrypted cookies)
   try {
@@ -165,72 +248,4 @@ module.exports.updateProfile = async function updateProfile (req, res) {
   }
 }
 
-exports.redirectUser = async (req, res) => {
-  try {
-    const sortUrl = req.params.shortId
-    console.log('short url', sortUrl)
 
-    if (req.user) {
-      const result = await userDataBase.findOne(
-        {
-          _id: req.user,
-          'urlData.sortUrl': sortUrl
-        },
-        { "urlData.$": 1 }
-      )
-
-      console.log('result url user', result)
-      if (result) {
-        const longUrl = result.urlData[0].longUrl
-        console.log('long URL: ' + JSON.stringify(longUrl))
-        var { urlUsedCount } = result.urlData[0]
-        urlUsedCount++
-
-        const updateClicks = await userDataBase.updateOne(
-          {
-            _id: req.user,
-            'urlData.sortUrl': sortUrl
-          },
-          { $set: { 'urlData.$.urlUsedCount': urlUsedCount } }
-        )
-
-        res.redirect(longUrl)
-      } else {
-        res
-          .status(404)
-          .json({ message: 'Something Went Wrong', statusCode: 404 })
-        return
-      }
-    } else {
-      const result = await urlModel.findOne(
-        { 'urlData.sortUrl': sortUrl },
-        { 'urlData.$': 1 }
-      )
-      console.log('short Url result', result)
-      if (result) {
-        var { urlUsedCount } = result.urlData[0];
-        urlUsedCount++
-        console.log("urlUsedCount", urlUsedCount);
-
-        const updateClicks = await urlModel.updateOne(
-          {
-            'urlData.sortUrl': sortUrl
-          },
-          { $set: { 'urlData.$.urlUsedCount': urlUsedCount } }
-        );
-        console.log("updateClicks", updateClicks);
-
-        res
-          .writeHead(301, {
-            Location: `${result.urlData[0].longUrl}`
-          })
-          .end()
-      } else {
-        res.json({ statusCode: 404, message: 'Url not found' })
-      }
-    }
-  } catch (err) {
-    console.log('error in redirect', err)
-    res.status(500).json({ message: 'Internal Server Error' })
-  }
-}

@@ -10,7 +10,7 @@ userRouter
 
 userRouter
     .route('/dashboard')
-    .get( getUserData);
+    .get( protectRoute, getUserData);
 
 userRouter
     .route('/updateProfile')

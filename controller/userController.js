@@ -116,9 +116,12 @@ module.exports.logoutUser = function logoutUser (req, res) {
 
 // stats
 module.exports.getUserData = async function getUserData (req, res) {
-  let dataObj = jwt.verify(req.cookies.isLoggedIn, JWT_KEY)
+  if (!req.user) {
+    res.status(401).json({ statusCode: 401 });
+    return;
+  }
 
-  let userData = await userDataBase.findOne({ _id: dataObj.payload })
+  let userData = await userDataBase.findOne({ _id: req.user });
 
   res.status(200).json({
     message: 'In the dashborad',

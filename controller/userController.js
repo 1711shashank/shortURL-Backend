@@ -1,4 +1,13 @@
 const { userDataBase, urlModel } = require('../models/mongoDB')
+const {
+  updateClicks,
+  findSortLink,
+  findAuthorizedUserLink,
+  findLongUrl,
+  updateCreatedCount,
+  saveSortedUrl,
+  saveSortedUrlForUnauthorizedUser
+} = require('../services/user.servics')
 const userRouter = require('./userRouter')
 const jwt = require('jsonwebtoken')
 const generator = require('../services/generator')
@@ -6,54 +15,33 @@ const JWT_KEY = 'skf453wdanj3rfj93nos'
 
 module.exports.sortURL = async function sortURL (req, res) {
   try {
-    
-    var { longUrl } = req.body;
-    longUrl = generator.filterUrl(longUrl);
+    var { longUrl } = req.body
+    longUrl = generator.filterUrl(longUrl)
 
-    const sortUrl = generator.short()
     console.log(req.user)
 
     if (req.user) {
-      const isUrlAlreadyShorted = await userDataBase.findOne({
-        _id: req.user,
-        'urlData.longUrl': longUrl
-      }, {"urlData.$": 1})
+      const isUrlAlreadyShorted = await findLongUrl(req, longUrl)
       console.log('UrlAlreadyShorted', isUrlAlreadyShorted)
 
       if (isUrlAlreadyShorted) {
-        const sortedUrl = isUrlAlreadyShorted.urlData[0].sortUrl
-        var { urlUsedCount, urlCreatedCount } = isUrlAlreadyShorted.urlData[0]
-        urlCreatedCount = urlCreatedCount + 1
-        const updateCreatedCount = await userDataBase.updateOne(
-          { _id: req.user, 'urlData.longUrl': longUrl },
-          {
-            $set: { 'urlData.$.urlCreatedCount': urlCreatedCount }
-          }
-        )
-        console.log('urlCreatedCount ', updateCreatedCount)
+        const updateUrlCreation = await updateCreatedCount(isUrlAlreadyShorted)
+
+        console.log('urlCreatedCount ', updateUrlCreation)
+        var { urlUsedCount, urlCreatedCount, sortUrl } = data.urlData[0]
 
         res.status(200).json({
           message: 'URL',
-          data: { sortedUrl, urlCreatedCount, urlUsedCount },
+          data: { sortUrl, urlCreatedCount: urlCreatedCount + 1, urlUsedCount },
           statusCode: 200
         })
-        return
+        return;
       } else {
-        const urlStats = {
-          longUrl,
-          sortUrl,
-          urlCreatedCount: 1,
-          urlUsedCount: 1
-        }
+        const sortUrl = generator.short();
 
-        const result = await userDataBase.updateOne(
-          { _id: req.user },
-          {
-            $push: { urlData: urlStats }
-          },
-          { upsert: true }
-        )
-        console.log('result', result)
+        const result = await saveSortedUrl(req.user, longUrl, sortUrl);
+
+        console.log('saved shortened url', result);
 
         res.status(200).json({
           message: 'URL',
@@ -62,17 +50,10 @@ module.exports.sortURL = async function sortURL (req, res) {
         })
       }
     } else {
-      const urlStats = {
-        longUrl,
-        sortUrl,
-        urlCreatedCount: 1,
-        urlUsedCount: 1
-      }
-      const urlobj = new urlModel({ urlData: urlStats })
-      const result = await urlobj.save()
-      console.log('result', result)
-
-      res.send(result)
+      const sortUrl = generator.short();
+      const result = await saveSortedUrlForUnauthorizedUser(longUrl,sortUrl);
+      console.log("result sortUrl: ", result)
+      res.send(result);
     }
   } catch (err) {
     console.log('err in userController', err)
@@ -84,88 +65,39 @@ module.exports.sortURL = async function sortURL (req, res) {
 }
 
 exports.redirectUser = async (req, res) => {
-    try {
-      const sortUrl = req.params.shortId
-      console.log('short url', sortUrl)
-  
-      if (req.user) {
-        const result = await userDataBase.findOne(
-          {
-            _id: req.user,
-            'urlData.sortUrl': sortUrl
-          },
-          { "urlData.$": 1 }
-        )
-  
-        console.log('result url user', result)
-        if (result) {
-          const longUrl = result.urlData[0].longUrl
-          console.log('long URL: ' + JSON.stringify(longUrl))
-          var { urlUsedCount } = result.urlData[0]
-          urlUsedCount++
-  
-          const updateClicks = await userDataBase.updateOne(
-            {
-              _id: req.user,
-              'urlData.sortUrl': sortUrl
-            },
-            { $set: { 'urlData.$.urlUsedCount': urlUsedCount } }
-          )
-  
-          res.redirect(longUrl)
-        } else {
-          res
-            .status(404)
-            .json({ message: 'Something Went Wrong', statusCode: 404 })
-          return
-        }
-      } else {
-        const result = await urlModel.findOne(
-          { 'urlData.sortUrl': sortUrl },
-          { 'urlData.$': 1 }
-        )
-        console.log('short Url result', result)
-        if (result) {
-          var { urlUsedCount } = result.urlData[0];
-          urlUsedCount++
-          console.log("urlUsedCount", urlUsedCount);
-  
-          const updateClicks = await urlModel.updateOne(
-            {
-              'urlData.sortUrl': sortUrl
-            },
-            { $set: { 'urlData.$.urlUsedCount': urlUsedCount } }
-          );
-          console.log("updateClicks", updateClicks);
-  
-          res
-            .writeHead(301, {
-              Location: `${result.urlData[0].longUrl}`
-            })
-            .end()
-        } else {
-          res.json({ statusCode: 404, message: 'Url not found' })
-        }
+  try {
+    const sortUrl = req.params.shortId
+    console.log('short url', sortUrl)
+
+    const result = await findAuthorizedUserLink(sortUrl)
+
+    console.log('result url user', result)
+
+    if (result) {
+      const longUrl = result.urlData[0].longUrl
+      console.log('long URL: ' + JSON.stringify(longUrl))
+
+      await updateClicks(req, sortUrl, result)
+
+      res.redirect(longUrl)
+    } else {
+      const result = await findSortLink(sortUrl)
+
+      if (!result) {
+        res.status(404).json({ message: 'Invalid short Id', statusCode: 404 })
+        return
       }
-    } catch (err) {
-      console.log('error in redirect', err)
-      res.status(500).json({ message: 'Internal Server Error' })
+      const longUrl = result.urlData[0].longUrl
+      console.log('long URL: ' + JSON.stringify(longUrl))
+      await updateClicks(req, sortUrl, result)
+      res.redirect(longUrl)
+      return
     }
+  } catch (err) {
+    console.log('error in redirect', err)
+    res.status(500).json({ message: 'Internal Server Error' })
+  }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 module.exports.protectRoute = function protectRoute (req, res, next) {
   // checking wether user is logged In or not using cookies (JWT encrypted cookies)
@@ -203,11 +135,11 @@ module.exports.logoutUser = function logoutUser (req, res) {
 // stats
 module.exports.getUserData = async function getUserData (req, res) {
   if (!req.user) {
-    res.status(401).json({ statusCode: 401 });
-    return;
+    res.status(401).json({ message: 'User Not Authenticated', statusCode: 401 })
+    return
   }
 
-  let userData = await userDataBase.findOne({ _id: req.user });
+  let userData = await userDataBase.findOne({ _id: req.user })
 
   res.status(200).json({
     message: 'In the dashborad',
@@ -247,5 +179,3 @@ module.exports.updateProfile = async function updateProfile (req, res) {
     })
   }
 }
-
-

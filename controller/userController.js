@@ -4,6 +4,7 @@ const userRouter = require('./userRouter');
 module.exports.sortURL = async function sortURL(req, res) {
     try {
         let link = req.body;
+        console.log(link);
 
         // tempObj = {
         //     name:"123",
@@ -26,7 +27,7 @@ module.exports.sortURL = async function sortURL(req, res) {
             }
 
             urlData.push(urlStats);
-            await user.save();
+            // await user.save();
         }
 
         res.status(200).json({

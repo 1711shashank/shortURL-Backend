@@ -1,22 +1,37 @@
 const userDataBase = require('../models/mongoDB');
-var jwt = require('jsonwebtoken');
 const userRouter = require('./userRouter');
-const { use } = require('./authRouter');
-const JWT_KEY = 'skf453wdanj3rfj93nos';
 
-module.exports.sortURL = async function sortURL(req,res){
+module.exports.sortURL = async function sortURL(req, res) {
     try {
-        let url = req.body;
+        let link = req.body;
 
-        {
-            // TODO: sort URL
+        // tempObj = {
+        //     name:"123",
+        //     email:"123@gmail.com",
+        //     password:"123",
+        //     urlData : []
+        // }
+        // await userDataBase.create(tempObj);
+
+
+        let user = await userDataBase.findOne({ _id: "623407fac9a2f40bc15c9a23" });
+
+        if (user) {
+            urlData = user.urlData;
+            urlStats = {
+                longUrl: link.url,
+                sortUrl: link.url,
+                urlCreatedCount: "1",
+                urlUsedCount: "1"
+            }
+
+            urlData.push(urlStats);
+            await user.save();
         }
 
-
-        console.log("URL");
         res.status(200).json({
             message: "URL",
-            data: url,
+            data: user,
             statusCode: 200
         })
 
@@ -27,11 +42,6 @@ module.exports.sortURL = async function sortURL(req,res){
         })
     }
 
-    res.status(200).json({
-        message: "URL",
-        res: req.body,
-        statusCode : 200
-    })
 
 }
 
@@ -95,7 +105,7 @@ module.exports.getUserData = async function getUserData(req, res) {
     res.status(200).json({
         message: "In the dashborad",
         res: userData,
-        statusCode : 200
+        statusCode: 200
     })
 }
 

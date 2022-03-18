@@ -26,14 +26,12 @@ const userSchema = mongoose.Schema([{
         type: String,
         required: true,
     },
-    url: {
-        
-        originalURL :{},                // facebook.com
-        sortURL:{},                     // fb.com
-        urlCreatedCount:{},             // 0           
-        urlUsedCount:{}                 // 0
-
-    }
+    urlData: [{
+        longUrl:{},
+        sortUrl:{},
+        urlCreatedCount:{},
+        urlUsedCount:{}
+    }]
 }])
 
 const userDataBase = mongoose.model("userModal", userSchema);

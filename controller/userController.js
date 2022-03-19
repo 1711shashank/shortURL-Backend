@@ -28,7 +28,7 @@ module.exports.sortURL = async function sortURL (req, res) {
         const updateUrlCreation = await updateCreatedCount(isUrlAlreadyShorted)
 
         console.log('urlCreatedCount ', updateUrlCreation)
-        var { urlUsedCount, urlCreatedCount, sortUrl } = data.urlData[0]
+        var { urlUsedCount, urlCreatedCount, sortUrl } = isUrlAlreadyShorted.urlData[0]
 
         res.status(200).json({
           message: 'URL',
@@ -107,11 +107,12 @@ module.exports.protectRoute = function protectRoute (req, res, next) {
     // we can also skip the if() conduction and directly write the statement inside it
 
     // req.cookies.isLoggedIn this hashValue contain payload (_id), so while verifying [_id] is not required
-    if (!req.cookies.isLoggedIn) {
+    if (!req.headers['authorization']) {
       next()
     } else {
-      let isVerified = jwt.verify(req.cookies.isLoggedIn, JWT_KEY)
+      let isVerified = jwt.verify(req.headers['authorization'] ,JWT_KEY);
       if (isVerified) {
+        console.log("jwt",isVerified.payload)
         req.user = isVerified.payload
       }
       next()

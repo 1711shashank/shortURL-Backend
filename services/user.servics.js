@@ -70,10 +70,11 @@ exports.findLongUrl = async (req, longUrl) => {
   }
 }
 
-exports.updateCreatedCount = async (id,data) => {
+exports.updateCreatedCount = async (userObj) => {
   try {
-    var { urlCreatedCount } = data.urlData[0]
-    urlCreatedCount = urlCreatedCount + 1
+    var id = userObj._id;
+    var { urlCreatedCount, longUrl } = userObj.urlData[0];
+    urlCreatedCount = urlCreatedCount + 1;
     const result = await userDataBase.updateOne(
       { _id: id, 'urlData.longUrl': longUrl },
       {
@@ -82,7 +83,7 @@ exports.updateCreatedCount = async (id,data) => {
     )
     return result
   } catch (err) {
-    console.log('error in finding Long Url', err)
+    console.log('error in updating Url', err)
     throw err
   }
 }

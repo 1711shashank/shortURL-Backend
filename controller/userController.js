@@ -32,7 +32,7 @@ module.exports.sortURL = async function sortURL (req, res) {
 
         res.status(200).json({
           message: 'URL',
-          data: { sortUrl, urlCreatedCount: urlCreatedCount + 1, urlUsedCount },
+          data: { longUrl,sortUrl, urlCreatedCount: urlCreatedCount + 1, urlUsedCount },
           statusCode: 200
         })
         return;
@@ -40,12 +40,12 @@ module.exports.sortURL = async function sortURL (req, res) {
         const sortUrl = generator.short();
 
         const result = await saveSortedUrl(req.user, longUrl, sortUrl);
-
+        const { urlCreatedCount, urlUsedCount } = result;
         console.log('saved shortened url', result);
 
         res.status(200).json({
           message: 'URL',
-          data: sortUrl,
+          data: {longUrl,sortUrl,urlCreatedCount,urlUsedCount},
           statusCode: 200
         })
       }
@@ -53,7 +53,7 @@ module.exports.sortURL = async function sortURL (req, res) {
       const sortUrl = generator.short();
       const result = await saveSortedUrlForUnauthorizedUser(longUrl,sortUrl);
       console.log("result sortUrl: ", result)
-      res.send(result);
+      res.status(200).json({ data: { longUrl, sortUrl } });
     }
   } catch (err) {
     console.log('err in userController', err)
@@ -108,7 +108,7 @@ module.exports.protectRoute = function protectRoute (req, res, next) {
 
     // req.cookies.isLoggedIn this hashValue contain payload (_id), so while verifying [_id] is not required
     if (!req.headers['authorization']) {
-      next()
+      next();
     } else {
       let isVerified = jwt.verify(req.headers['authorization'] ,JWT_KEY);
       if (isVerified) {

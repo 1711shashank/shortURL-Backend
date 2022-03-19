@@ -60,7 +60,7 @@ module.exports.loginUser = async function loginUser(req, res) {
                     res.status(200).json({
                         message: "LogIn Successfully",
                         statusCode : 200,
-                        data: jwtSign
+                        data: {user,token:jwtSign}
                         
                     });
                 }

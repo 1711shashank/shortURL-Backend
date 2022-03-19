@@ -75,13 +75,13 @@ exports.updateCreatedCount = async (userObj) => {
     var id = userObj._id;
     var { urlCreatedCount, longUrl } = userObj.urlData[0];
     urlCreatedCount = urlCreatedCount + 1;
-    const result = await userDataBase.updateOne(
+    const result = await userDataBase.findOneAndUpdate(
       { _id: id, 'urlData.longUrl': longUrl },
       {
         $set: { 'urlData.$.urlCreatedCount': urlCreatedCount }
       }
-    )
-    return result
+    );
+    return result;
   } catch (err) {
     console.log('error in updating Url', err)
     throw err
@@ -97,14 +97,15 @@ exports.saveSortedUrl = async (id,longUrl, sortUrl) => {
       urlUsedCount: 0
     }
 
-    const result = await userDataBase.updateOne(
+    const result = await userDataBase.findOneAndUpdate(
       { _id: id },
       {
-        $push: { urlData: urlStats }
+        $push: { urlData: urlStats },
+        
       },
       { upsert: true }
     )
-      return result;
+      return urlStats;
   } catch (err) {
     console.log('error in finding Long Url', err)
     throw err

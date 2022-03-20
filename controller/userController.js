@@ -66,7 +66,9 @@ module.exports.sortURL = async function sortURL (req, res) {
 
 exports.redirectUser = async (req, res) => {
   try {
-    const sortUrl = req.params.shortId
+    let key = req.params.shortId;
+    let sortUrl= `http://localhost:3000/${key}`;
+    // sortUrl = prefix.concate(sortUrl);
     console.log('short url', sortUrl)
 
     const result = await findAuthorizedUserLink(sortUrl)

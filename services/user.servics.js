@@ -62,8 +62,8 @@ exports.findLongUrl = async (req, longUrl) => {
         'urlData.longUrl': longUrl
       },
       { 'urlData.$': 1 }
-    )
-    return result
+    );
+    return result;
   } catch (err) {
     console.log('error in finding Long Url', err)
     throw err

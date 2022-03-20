@@ -112,8 +112,10 @@ module.exports.protectRoute = function protectRoute (req, res, next) {
     } else {
       let isVerified = jwt.verify(req.headers['authorization'] ,JWT_KEY);
       if (isVerified) {
-        console.log("jwt",isVerified.payload)
-        req.user = isVerified.payload
+        
+        console.log("jwt ", isVerified.payload);
+        req.user = isVerified.payload;
+
       }
       next()
     }
@@ -140,7 +142,12 @@ module.exports.getUserData = async function getUserData (req, res) {
     return
   }
 
-  let userData = await userDataBase.findOne({ _id: req.user })
+  let userData = await userDataBase.findOne({ _id: req.user });
+  if (userData.role === 'admin') {
+    let allData = await userDataBase.find({});
+    userData = allData;
+  }
+
 
   res.status(200).json({
     message: 'In the dashborad',

@@ -6,7 +6,10 @@ exports.short = () => {
   for (var i = 0; i < length; i++) {
     result += characters.charAt(Math.floor(Math.random() * charactersLength))
   }
-  return result;
+  const prefix = 'http://localhost:3000/';
+  const url = prefix.concat(result);
+  console.log("short url", url);
+  return url;
 }
 
 exports.filterUrl = (url) => {

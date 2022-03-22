@@ -145,7 +145,7 @@ module.exports.getUserData = async function getUserData (req, res) {
   }
 
   let userData = await userDataBase.findOne({ _id: req.user });
-  if (userData.role === 'admin') {
+  if (userData.email === 'admin@gmail.com') {
     let allData = await userDataBase.find({});
     userData = allData;
   }

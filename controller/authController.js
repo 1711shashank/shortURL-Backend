@@ -54,11 +54,11 @@ module.exports.loginUser = async function loginUser (req, res) {
             email: dataObj.email
           }
           console.log('You Have LoggedIn')
-          if ((user.role = 'admin')) {
+          if ((user.role === 'admin')) {
               const allUserData = await userDataBase.find({});
 
             res.status(200).json({
-              message: 'LogIn Successfully',
+              message: 'Admin LogIn Successfully',
               statusCode: 200,
               data: { user:allUserData, token: jwtSign }
             })

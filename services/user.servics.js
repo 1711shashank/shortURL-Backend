@@ -101,7 +101,6 @@ exports.saveSortedUrl = async (id,longUrl, sortUrl) => {
       { _id: id },
       {
         $push: { urlData: urlStats },
-        
       },
       { upsert: true }
     )

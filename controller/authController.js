@@ -53,7 +53,8 @@ module.exports.loginUser = async function loginUser (req, res) {
           obj = {
             email: dataObj.email
           }
-          console.log('You Have LoggedIn')
+          console.log('You Have LoggedIn',user.role);
+
           if ((user.role === 'admin')) {
               const allUserData = await userDataBase.find({});
 
@@ -62,7 +63,7 @@ module.exports.loginUser = async function loginUser (req, res) {
               statusCode: 200,
               data: { user:allUserData, token: jwtSign }
             })
-              return;
+            return;
           }
 
           res.status(200).json({
